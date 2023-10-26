@@ -25,6 +25,8 @@ spring:
         multiplier: 1.1
     gateway:
       default-filters:
+        - SaveSession
+        - TokenRelay
         - name: Retry
           args:
             retries: 3
@@ -42,7 +44,6 @@ spring:
               replenishRate: 10
               burstCapacity: 20
               requestedTokens: 1
-        - SaveSession
       httpclient:
         connect-timeout: 2000
         response-timeout: 5s
@@ -68,16 +69,32 @@ spring:
             - name: CircuitBreaker
               args:
                 name: orderCircuitBreaker
-  redis:
-    connect-timeout: 2a
-    host: localhost
-    port: 6379
-    timeout: 1s
+        - id: spa-route
+          uri: ${SPA_URL:http://localhost:9004}
+          predicates:
+            - Path=/,/*.css,/*.js,/favicon.ico
+  data:
+    redis:
+      connect-timeout: 2s
+      host: localhost
+      port: 6379
+      timeout: 1s
   session:
     store-type: redis
     timeout: 10m
     redis:
-      namespace: polar-edge
+      namespace: polar:edge
+  security:
+    oauth2:
+      client:
+        registration:
+          keycloak:
+            client-id: edge-service
+            client-secret: polar-keycloak-secret
+            scope: openid,roles
+        provider:
+          keycloak:
+            issuer-uri: http://localhost:8080/realms/PolarBookshop
 
 resilience4j:
   circuitbreaker:
