@@ -80,7 +80,6 @@ spring:
       port: 6379
       timeout: 1s
   session:
-    store-type: redis
     timeout: 10m
     redis:
       namespace: polar:edge
@@ -111,7 +110,7 @@ resilience4j:
 
 logging:
   group:
-    circuitbreaker: io.github.resilience4j, org.springframework.circuitbreaker
+    circuitbreaker: io.github.resilience4j, org.springframework.cloud.circuitbreaker
   level:
     circuitbreaker: info
   pattern:
