@@ -38,15 +38,24 @@ jobs:
         if: success() || failure()
         with:
           sarif_file: ${{ steps.scan.outputs.sarif }}
-      - name: Validate Kubernetes manifests
-        uses: docker://ghcr.io/yannh/kubeconform:latest
+  manifest:
+    name: Validate Kubernetes manifests
+    needs: [ build ]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: yokawasa/action-setup-kube-tools@v0.9.3
         with:
-          entrypoint: '/kubeconform'
-          args: "-summary -output json k8s/"
+          setup-tools: |
+            kubectl
+            kustomize
+            kubeconform
+      - run: |
+          kustomize build k8s | kubeconform --summary -output json -
   package:
     name: Package and Publish
     if: ${{ github.ref == 'refs/heads/main' }}
-    needs: [ build ]
+    needs: [ manifest ]
     runs-on: ubuntu-22.04
     permissions:
       contents: read
