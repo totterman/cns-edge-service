@@ -38,24 +38,17 @@ jobs:
         if: success() || failure()
         with:
           sarif_file: ${{ steps.scan.outputs.sarif }}
-  manifest:
-    name: Validate Kubernetes manifests
-    needs: [ build ]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: yokawasa/action-setup-kube-tools@v0.9.3
+      - name: Validate Kubernetes manifests
+        uses: stefanprodan/kube-tools@v1
         with:
-          setup-tools: |
-            kubectl
-            kustomize
-            kubeconform
-      - run: |
-          kustomize build k8s | kubeconform --summary -output json -
+          kubectl: 1.26.3
+          kubeconform: 0.6.1
+          command: |
+            kustomize build k8s | kubeconform --strict -
   package:
     name: Package and Publish
     if: ${{ github.ref == 'refs/heads/main' }}
-    needs: [ manifest ]
+    needs: [ build ]
     runs-on: ubuntu-22.04
     permissions:
       contents: read
@@ -94,3 +87,8 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Publish container image
         run: docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.VERSION }}
+      - name: Publish container image (latest)
+        run: |
+          docker tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.VERSION }} \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
